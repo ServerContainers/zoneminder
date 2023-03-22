@@ -1,0 +1,29 @@
+#!/bin/sh
+
+for zmenv in $(cat /etc/zm/zm.conf | grep '^ZM_DB_' | grep -v 'ZM_DB_TYPE' | cut -d '=' -f1); do
+  if env | grep "^$zmenv=" 2>/dev/null >/dev/null; then
+    echo "$zmenv value specified - overwrite value in /etc/zm/zm.conf"
+    sed -i '/^'"$zmenv"'/d' /etc/zm/zm.conf
+    env | grep "^$zmenv=" >> /etc/zm/zm.conf
+  fi
+done
+
+. /etc/zm/zm.conf
+
+while ! echo 'SHOW TABLES;' | mysql -h "$ZM_DB_HOST" -u "$ZM_DB_USER" -p"$ZM_DB_PASS" "$ZM_DB_NAME" 2>/dev/null >/dev/null; do
+  echo 'waiting for db...'
+  sleep 2
+done
+
+if [ $(echo 'SHOW TABLES;' | mysql -h "$ZM_DB_HOST" -u "$ZM_DB_USER" -p"$ZM_DB_PASS" "$ZM_DB_NAME" | wc -l) -eq 0 ]; then
+  echo 'init db...'
+  mysql -h "$ZM_DB_HOST" -u "$ZM_DB_USER" -p"$ZM_DB_PASS" "$ZM_DB_NAME" < /usr/share/zoneminder/db/zm_create.sql
+fi
+
+sleep 2
+
+/usr/bin/zmpkg.pl start
+while true; do
+  /usr/bin/zmpkg.pl status | grep running 2>/dev/null >/dev/null || /usr/bin/zmpkg.pl start
+  sleep 20
+done

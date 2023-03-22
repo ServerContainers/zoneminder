@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+
+  db:
+    image: mariadb
+    command: --max-allowed-packet=64MB
+    restart: unless-stopped
+    volumes:
+      - ./db:/var/lib/mysql
+    environment:
+      - TZ=Europe/Berlin
+
+      - MYSQL_ROOT_PASSWORD=Thaax9yoopu0
+
+      - MYSQL_DATABASE=zm
+      - MYSQL_USER=zmuser
+      - MYSQL_PASSWORD=zmpass
+
+  db-backup:
+    image: alpine
+    command: sh -c 'apk add --no-cache mariadb-client; echo sleep 5m; sleep 5m; while true; do echo run mysql backup, mysqldump -h db -u zmuser -pzmpass zm > /var/backup/zm.db; sleep 1d; done'
+    restart: unless-stopped
+    volumes:
+      - ./db-backup:/var/backup
+    environment: 
+      - TZ=Europe/Berlin
+    links:
+      - "db:db"
+    depends_on:
+      - db
+      
+  zoneminder:
+    build: .
+    image: ghcr.io/servercontainers/zoneminder
+    restart: unless-stopped
+    volumes: 
+      - ./events:/var/cache/zoneminder/events
+    environment: 
+      - TZ=Europe/Berlin
+
+      - DISABLE_TLS=disable
+
+      - ZM_DB_HOST=db
+      - ZM_DB_NAME=zm
+      - ZM_DB_USER=zmuser
+      - ZM_DB_PASS=zmpass
+    shm_size: "2g"
+    ports: 
+      - 8080:80
+    links:
+      - "db:db"
+    depends_on:
+      - db    
