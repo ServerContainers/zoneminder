@@ -26,7 +26,6 @@ This way you can pin your installation/configuration to a certian version. or ea
 
 To build a `latest` tag run `./build.sh release`
 
-
 ## Changelogs
 
 * 2023-03-20
