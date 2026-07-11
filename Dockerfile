@@ -3,8 +3,9 @@ FROM ghcr.io/servercontainers/apache2-ssl-secure
 RUN apt-get -q -y update && \
     apt-get -q -y install apt-transport-https gnupg wget && \
     \
-    echo 'deb https://zmrepo.zoneminder.com/debian/release-1.36 bullseye/' >> /etc/apt/sources.list && \
-    wget -O - https://zmrepo.zoneminder.com/debian/archive-keyring.gpg | apt-key add - && \
+    mkdir -p /etc/apt/keyrings && \
+    wget -O /etc/apt/keyrings/zoneminder.asc https://zmrepo.zoneminder.com/debian/archive-keyring.gpg && \
+    echo 'deb [signed-by=/etc/apt/keyrings/zoneminder.asc] https://zmrepo.zoneminder.com/debian/release-1.38 trixie/' >> /etc/apt/sources.list && \
     \
     apt-get -q -y update && \
     apt-get -q -y install zoneminder && \
